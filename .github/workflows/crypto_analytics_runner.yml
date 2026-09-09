@@ -1,9 +1,9 @@
-name: 400 - Crypto Analytics Integrated Pipeline (Full Runner)
+name: 407 - Crypto Analytics Integrated Pipeline (Full Runner)
 
 on:
   schedule:
-    # Minden nap 02:00 UTC-kor indítja a teljes láncot
-    - cron: '0 2 * * *'
+    # Minden nap 02:07 UTC-kor indítja a teljes láncot
+    - cron: '7 2 * * *'
   workflow_dispatch:
     inputs:
       backfill:
