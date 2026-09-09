@@ -1,0 +1,50 @@
+name: 407 - Lottery Data Load (Runner)
+
+on:
+  schedule:
+    # Minden nap hajnali 2:07-kor (UTC)
+    - cron: '7 2 * * *'
+  workflow_dispatch:   # manuális indítás lehetősége
+
+jobs:
+  load_data:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. A privát repó letöltése a PAT Token segítségével
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'mazsola-mydev/lottery
+          token: ${{ secrets.GH_API_TOKEN }}
+
+      # 2. Python környezet beállítása
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. MSSQL ODBC Driver telepítése
+      - name: Install ODBC Driver for SQL Server
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
+
+      # 4. Python függőségek telepítése
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests pyodbc numpy sqlalchemy
+
+      # 5. A privátból letöltött Python script futtatása
+      - name: Run load script
+        env:
+          AZURE_SQL_SERVER: ${{ vars.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ vars.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python load_lottery.py
