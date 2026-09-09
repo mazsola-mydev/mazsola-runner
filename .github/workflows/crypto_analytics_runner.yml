@@ -1,0 +1,136 @@
+name: 400 - Crypto Analytics Integrated Pipeline (Full Runner)
+
+on:
+  schedule:
+    # Minden nap 02:00 UTC-kor indítja a teljes láncot
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Teljes backfill az indikátorokhoz (true/false)'
+        required: true
+        default: 'true'
+
+jobs:
+  run_pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- ELŐKÉSZÜLETEK (Környezet felépítése) ---
+
+      # 1. Privát kód letöltése
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'mazsola-mydev/crypto-analytics'
+          token: ${{ secrets.CLASSIC_TOKEN }}
+
+      # 2. Python 3.12 beállítása
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 3. MSSQL ODBC Driver 18 telepítése
+      - name: Install ODBC Driver 18 for SQL Server
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+
+      # 4. Összes szükséges Python függőség telepítése egy lépésben
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install polars pandas requests sqlalchemy pyodbc python-dotenv loguru
+
+      # --- LÉPÉSEK VÉGREHAJTÁSA ---
+
+      # Step #1: Daily Reset API Keys (Ha ez elhasal, a teljes feladat leáll)
+      - name: "Step #1 - Daily Reset API Keys"
+        id: step1
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python daily_reset_key.py
+
+      # Step #2: EODHD Data Collection
+      - name: "Step #2 - EODHD Data Collection"
+        id: step2
+        continue-on-error: true
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+          EODHD_API_KEY_00: ${{ secrets.EODHD_API_KEY_00 }}
+          EODHD_API_KEY_01: ${{ secrets.EODHD_API_KEY_01 }}
+          EODHD_API_KEY_02: ${{ secrets.EODHD_API_KEY_02 }}
+          EODHD_API_KEY_03: ${{ secrets.EODHD_API_KEY_03 }}
+          EODHD_API_KEY_04: ${{ secrets.EODHD_API_KEY_04 }}
+          EODHD_API_KEY_05: ${{ secrets.EODHD_API_KEY_05 }}
+        run: python collect_eodhd_to_azuresql.py
+
+      # Step #3: FMP Data Collection
+      - name: "Step #3 - FMP Data Collection"
+        id: step3
+        continue-on-error: true
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python collect_fmp_to_azuresql.py
+
+      # Step #4: AV Data Collection
+      - name: "Step #4 - AV Data Collection"
+        id: step4
+        continue-on-error: true
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+          ALPHAVANTAGE_API_KEY_04: ${{ secrets.ALPHAVANTAGE_API_KEY_04 }}
+        run: python collect_av_to_azuresql.py
+
+      # Step #5: Refresh Halving Analysis
+      - name: "Step #5 - Refresh Halving Analysis"
+        id: step5
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python refresh_halving.py
+
+      # Step #6: Calculate Indicators
+      # Feltétel: Step 1 sikeres volt ÉS (Step 2 VAGY Step 3 VAGY Step 4 sikeres)
+      - name: "Step #6 - Calculate Indicators"
+        id: step6
+        if: |
+          steps.step1.outcome == 'success' && 
+          (steps.step2.outcome == 'success' || steps.step3.outcome == 'success' || steps.step4.outcome == 'success')
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+          BACKFILL: ${{ github.event.inputs.backfill || 'true' }}
+        run: python calculate_indicators.py
+
+      # Step #7: Calculate Alerts
+      # Feltétel: Csak akkor fut le, ha a Step 6 sikeresen lefutott
+      - name: "Step #7 - Calculate Alerts"
+        id: step7
+        if: steps.step6.outcome == 'success'
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python calculate_alerts.py
