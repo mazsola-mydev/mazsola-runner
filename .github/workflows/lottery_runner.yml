@@ -15,7 +15,7 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: 'mazsola-mydev/lottery
+          repository: 'mazsola-mydev/lottery'
           token: ${{ secrets.GH_API_TOKEN }}
 
       # 2. Python környezet beállítása
