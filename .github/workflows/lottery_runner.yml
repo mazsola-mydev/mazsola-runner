@@ -2,7 +2,6 @@ name: 400 - Lottery (Full Runner)
 
 on:
   schedule:
-    # Minden nap hajnali 2:00-kor (UTC)
     - cron: '0 2 * * *'
   workflow_dispatch:   # manuális indítás lehetősége
 
