@@ -2,7 +2,7 @@ name: 407 - Crypto Analytics Integrated Pipeline (Full Runner)
 
 on:
   schedule:
-    - cron: '7 2 * * *'
+    - cron: '14 2 * * *'
   workflow_dispatch:
     inputs:
       backfill:
@@ -19,7 +19,7 @@ jobs:
 
       # 1. Privát kód letöltése
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'mazsola-mydev/crypto-analytics'
           token: ${{ secrets.CLASSIC_TOKEN }}
