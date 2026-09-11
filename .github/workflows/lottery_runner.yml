@@ -12,7 +12,7 @@ jobs:
     steps:
       # 1. A privát repó letöltése a PAT Token segítségével
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'mazsola-mydev/lottery'
           token: ${{ secrets.CLASSIC_TOKEN }}
