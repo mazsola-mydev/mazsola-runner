@@ -1,8 +1,8 @@
-name: 407 - Crypto Analytics Integrated Pipeline (Full Runner)
+name: 444 - Crypto Analytics Integrated Pipeline (Full Runner)
 
 on:
   schedule:
-    - cron: '14 2 * * *'
+    - cron: '44 2 * * *'
   workflow_dispatch:
     inputs:
       backfill:
