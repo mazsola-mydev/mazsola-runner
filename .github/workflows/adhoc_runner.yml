@@ -46,7 +46,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install polars pandas requests sqlalchemy pyodbc python-dotenv loguru numpy scipy
+          pip install polars pandas pyarrow requests sqlalchemy pyodbc python-dotenv loguru numpy scipy
 
       # 5. A megadott script futtatása az ÖSSZES Secret átadásával
       - name: Run Ad-hoc Script
