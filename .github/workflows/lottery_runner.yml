@@ -2,7 +2,7 @@ name: 434 - Lottery (Full Runner)
 
 on:
   schedule:
-    - cron: '34 2 * * *'
+    - cron: '12 0 * * *'
   workflow_dispatch:   # manuális indítás lehetősége
 
 jobs:
