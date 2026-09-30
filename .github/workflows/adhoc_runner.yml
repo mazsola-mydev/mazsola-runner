@@ -15,6 +15,10 @@ on:
         description: 'A lefuttatandó Python script neve (pl. calculate_indicators.py)'
         required: true
         default: 'script.py'
+      start_date:
+        description: 'Értékelt időszak kezdete (pl. 2020-01-01), üres = teljes'
+        required: false
+        default: ''
 
 jobs:
   run_adhoc:
@@ -69,6 +73,7 @@ jobs:
           ALPHAVANTAGE_API_KEY_04: ${{ secrets.ALPHAVANTAGE_API_KEY_04 }}
           # Egyéb alapértelmezett beállítások
           BACKFILL: 'true'
+          START_DATE: ${{ inputs.start_date }}
         run: |
           echo "futtatás: ${{ inputs.repository }} / ${{ inputs.script_name }}"
           python ${{ inputs.script_name }}
