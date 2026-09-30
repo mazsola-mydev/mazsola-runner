@@ -1,4 +1,4 @@
-name: 444 - Crypto Analytics Calculations Only (no collection)
+name: Crypto Analytics Calculations Only (no collection)
 
 on:
   workflow_dispatch:
