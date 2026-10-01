@@ -97,6 +97,18 @@ jobs:
           ALPHAVANTAGE_API_KEY_04: ${{ secrets.ALPHAVANTAGE_API_KEY_04 }}
         run: python collect_av_to_azuresql.py
 
+      # Step #4b: CoinGecko Global (piaci kapitalizáció + BTC dominancia)
+      - name: "Step #4b - CoinGecko Global"
+        id: step4b
+        continue-on-error: true
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+        run: python collect_coingecko_global.py
+
       # Step #5: Refresh Halving Analysis
       - name: "Step #5 - Refresh Halving Analysis"
         id: step5
@@ -158,3 +170,26 @@ jobs:
           AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
           AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
         run: python calculate_cluster_signals.py
+
+      # Step #10: Calculate Cycle (ciklus-fázis + vételi ajánlás, napi append)
+      # Feltétel: Csak akkor fut le, ha a Step 9 sikeresen lefutott
+      - name: "Step #10 - Calculate Cycle"
+        id: step10
+        if: steps.step9.outcome == 'success'
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python calculate_cycle.py
+
+      # Step #11: Calculate Macro Cycle (4 éves halving-ciklus fázis)
+      - name: "Step #11 - Calculate Macro Cycle"
+        id: step11
+        if: steps.step10.outcome == 'success'
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python calculate_macro_cycle.py

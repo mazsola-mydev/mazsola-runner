@@ -19,6 +19,10 @@ on:
         description: 'Értékelt időszak kezdete (pl. 2020-01-01), üres = teljes'
         required: false
         default: ''
+      backfill:
+        description: 'Backfill mód (true/false) - calculate_cycle.py backfilljéhez'
+        required: false
+        default: 'true'
 
 jobs:
   run_adhoc:
@@ -72,7 +76,7 @@ jobs:
           # AlphaVantage API kulcs
           ALPHAVANTAGE_API_KEY_04: ${{ secrets.ALPHAVANTAGE_API_KEY_04 }}
           # Egyéb alapértelmezett beállítások
-          BACKFILL: 'true'
+          BACKFILL: ${{ inputs.backfill }}
           START_DATE: ${{ inputs.start_date }}
         run: |
           echo "futtatás: ${{ inputs.repository }} / ${{ inputs.script_name }}"

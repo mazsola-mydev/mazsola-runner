@@ -98,3 +98,25 @@ jobs:
           AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
           AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
         run: python calculate_cluster_signals.py
+
+      # Step #6: Calculate Cycle (ciklus-fázis + vételi ajánlás, napi append)
+      - name: "Step #6 - Calculate Cycle"
+        id: step6
+        if: steps.step5.outcome == 'success'
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python calculate_cycle.py
+
+      # Step #7: Calculate Macro Cycle (4 éves halving-ciklus fázis)
+      - name: "Step #7 - Calculate Macro Cycle"
+        id: step7
+        if: steps.step6.outcome == 'success'
+        env:
+          AZURE_SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+          AZURE_SQL_DATABASE: ${{ secrets.AZURE_SQL_DATABASE }}
+          AZURE_SQL_USERNAME: ${{ secrets.AZURE_SQL_USERNAME }}
+          AZURE_SQL_PASSWORD: ${{ secrets.AZURE_SQL_PASSWORD }}
+        run: python calculate_macro_cycle.py
