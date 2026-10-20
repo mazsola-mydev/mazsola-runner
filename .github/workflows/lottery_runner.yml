@@ -29,13 +29,18 @@ jobs:
           set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y curl gnupg ca-certificates
-          sudo mkdir -p /etc/apt/keyrings
-          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
-            | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft-prod.gpg
-          OS_VERSION="$(. /etc/os-release && echo "$VERSION_ID")"
-          CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/${OS_VERSION}/prod ${CODENAME} main" \
-            | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          # A GitHub runner image már tartalmazza a Microsoft prod repo-t
+          # (/usr/share/keyrings/microsoft-prod.gpg). Ha már konfigurálva van,
+          # nem adunk hozzá második, eltérő Signed-By bejegyzést.
+          if ! grep -Rqs "packages.microsoft.com" /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null; then
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+              | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft-prod.gpg
+            OS_VERSION="$(. /etc/os-release && echo "$VERSION_ID")"
+            CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/${OS_VERSION}/prod ${CODENAME} main" \
+              | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          fi
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
 
