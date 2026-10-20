@@ -7,7 +7,7 @@ on:
 
 jobs:
   load_data:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # 1. A privát repó letöltése a PAT Token segítségével
@@ -23,13 +23,19 @@ jobs:
         with:
           python-version: '3.12'
 
-      # 3. MSSQL ODBC Driver telepítése
-      - name: Install ODBC Driver for SQL Server
+      # 3. MSSQL ODBC Driver 18 telepítése
+      - name: Install ODBC Driver 18 for SQL Server
         run: |
+          set -euxo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl gnupg
-          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-          curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get install -y curl gnupg ca-certificates
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft-prod.gpg
+          OS_VERSION="$(. /etc/os-release && echo "$VERSION_ID")"
+          CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/${OS_VERSION}/prod ${CODENAME} main" \
+            | sudo tee /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
 
